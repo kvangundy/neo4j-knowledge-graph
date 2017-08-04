@@ -24,14 +24,9 @@ ON CREATE SET c.context = {wikiResp}, c.bioSplit = FALSE;
 '''
 
 parseBio = '''
-MATCH(p:Company)
-WHERE p.bioSplit = FALSE
-WITH p, split(p.context, " ") as words
-UNWIND words as word
-MERGE (n:Tag {tag:word})
-MERGE (p)-[r:HAS_TAG]->(n)
-ON MATCH SET r.count = r.count + 1
-REMOVE p.bioSplit;
+CALL apoc.periodic.iterate(\'MATCH(p:Company) WHERE p.bioSplit = FALSE RETURN p\', 
+	\'WITH p, split(p.context, \" \") as words UNWIND words as word MERGE (n:Tag {tag:word}) MERGE (p)-[r:HAS_TAG]->(n) ON MATCH SET r.count = r.count + 1 REMOVE p.bioSplit\'
+	, {batchSize:100, parallel:true})
 '''
 
 findSimilar = '''
